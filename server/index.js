@@ -137,32 +137,13 @@ app.get('/taste-profile', async (req, res) => {
 
     const followedArtistsCount = followedArtistsPage?.artists?.total || 0;
 
-    // Genres from top artists
-    const genreCounts = {};
-    topArtists.forEach((artist) => {
-      (artist.genres || []).forEach((g) => {
-        const key = g.toLowerCase();
-        genreCounts[key] = (genreCounts[key] || 0) + 1;
-      });
-    });
-
-    const sortedGenres = Object.entries(genreCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8);
-    const maxGenreCount = sortedGenres[0]?.[1] || 1;
-
-    const genres = sortedGenres.map(([name, count]) => ({
-      name,
-      weight: count / maxGenreCount,
-    }));
-
     // Favorite artists
     const favoriteArtists = topArtists.slice(0, 12).map((artist) => ({
       name: artist.name,
       imageUrl: artist.images && artist.images[0] ? artist.images[0].url : '',
     }));
 
-    // Top tracks (no uri field, to match your current type)
+    // Top tracks
     const topTracksMapped = topTracks.slice(0, 10).map((track, idx) => ({
       rank: idx + 1,
       title: track.name,
@@ -237,6 +218,155 @@ app.get('/taste-profile', async (req, res) => {
       }),
     );
 
+    // --- Listening Personality ---
+    const habitMap = {};
+    listeningHabits.forEach((h) => {
+      habitMap[h.label] = h.value;
+    });
+
+    const nightShare =
+      (habitMap['Late Night'] || 0) + (habitMap['Evening'] || 0);
+    const morningShare = habitMap['Morning'] || 0;
+    const afternoonShare = habitMap['Afternoon'] || 0;
+
+    const energeticScore =
+      (mood.find((m) => m.axis === 'Energetic')?.value || 0) +
+      (mood.find((m) => m.axis === 'Danceable')?.value || 0);
+    const chillScore = mood.find((m) => m.axis === 'Chill')?.value || 0;
+    const melancholyScore =
+      mood.find((m) => m.axis === 'Melancholy')?.value || 0;
+
+    let listeningPersonality = {
+      archetype: 'The Balanced Listener',
+      summary:
+        'You move through different moods and times of day without a single dominant pattern.',
+      traits: [
+        'Listens across multiple parts of the day',
+        'Mix of upbeat and mellow tracks',
+        'Comfortable jumping between different vibes',
+      ],
+    };
+
+    if (nightShare > 0.55) {
+      listeningPersonality = {
+        archetype: 'The Night Rider',
+        summary:
+          'Your listening peaks in the evenings and late nights, leaning into immersive music when the world is quieter.',
+        traits: [
+          'Most listening happens in the evening or late night',
+          'Music is a companion for focus, gaming, or winding down',
+          nightShare > 0.7
+            ? 'You thrive in late-night deep dives and long sessions'
+            : 'You enjoy ending the day with music',
+        ],
+      };
+    } else if (morningShare > 0.45) {
+      listeningPersonality = {
+        archetype: 'The Day Starter',
+        summary:
+          'You lean on music to set the tone for your day and keep momentum going.',
+        traits: [
+          'Frequent listening in the morning',
+          'Music used to set mood and energy early',
+          'Prefers steady, uplifting tracks to get moving',
+        ],
+      };
+    } else if (afternoonShare > 0.5) {
+      listeningPersonality = {
+        archetype: 'The Midday Driver',
+        summary:
+          'You like music as a productivity boost or a backdrop while getting things done.',
+        traits: [
+          'Listening peaks in the afternoon',
+          'Music used to maintain focus or energy',
+          'Comfortable with repeat listens of familiar tracks',
+        ],
+      };
+    }
+
+    if (energeticScore > 1.2 && nightShare > 0.4) {
+      listeningPersonality = {
+        archetype: 'The High-Energy Night Rider',
+        summary:
+          'You gravitate toward upbeat, high-impact tracks, especially later in the day.',
+        traits: [
+          'Prefers energetic and danceable songs',
+          'Evenings and nights are prime listening windows',
+          'Great soundtrack selector for drives, games, and late-night work',
+        ],
+      };
+    } else if (chillScore > 0.6 && morningShare + afternoonShare > 0.4) {
+      listeningPersonality = {
+        archetype: 'The Chill Navigator',
+        summary:
+          'You favor smoother, laid-back sounds that keep you moving without overwhelming the moment.',
+        traits: [
+          'Leans toward chill or low-key tracks',
+          'Steady listening across daylight hours',
+          'Enjoys music as a comfort layer rather than the main event',
+        ],
+      };
+    } else if (melancholyScore > 0.5 && nightShare > 0.3) {
+      listeningPersonality = {
+        archetype: 'The Late-Night Reflector',
+        summary:
+          'You’re drawn to emotional, reflective tracks, especially when the day winds down.',
+        traits: [
+          'Often listens during evenings or late nights',
+          'Music is a space for introspection and emotion',
+          'Prefers songs with emotional weight or moodier production',
+        ],
+      };
+    }
+
+    // --- Artist Momentum ---
+
+    const recentArtistCounts = {};
+    if (recent && Array.isArray(recent.items)) {
+      recent.items.forEach((item) => {
+        const track = item.track;
+        const artistsForTrack = (track?.artists || []).map((a) => a.name);
+        artistsForTrack.forEach((name) => {
+          if (!name) return;
+          recentArtistCounts[name] = (recentArtistCounts[name] || 0) + 1;
+        });
+      });
+    }
+
+    const rideOrDie = [];
+    const newObsessions = [];
+    const quietFavorites = [];
+
+    topArtists.forEach((artist, index) => {
+      const name = artist.name;
+      const plays = recentArtistCounts[name] || 0;
+
+      if (!name) return;
+
+      if (index < 5 && plays >= 2) {
+        rideOrDie.push(name);
+      } else if (index >= 5 && plays >= 2) {
+        newObsessions.push(name);
+      } else if (index < 10 && plays === 0) {
+        quietFavorites.push(name);
+      }
+    });
+
+    const artistMomentum = [
+      {
+        label: 'Ride-or-Die Artists',
+        artists: rideOrDie.slice(0, 6),
+      },
+      {
+        label: 'New Obsessions',
+        artists: newObsessions.slice(0, 6),
+      },
+      {
+        label: 'Quiet Favorites',
+        artists: quietFavorites.slice(0, 6),
+      },
+    ].filter((bucket) => bucket.artists.length > 0);
+
     const tasteProfile = {
       displayName,
       avatarUrl,
@@ -245,10 +375,11 @@ app.get('/taste-profile', async (req, res) => {
       playlistsCount,
       followedArtistsCount,
       mood,
-      genres,
       favoriteArtists,
       topTracks: topTracksMapped,
       listeningHabits,
+      listeningPersonality,
+      artistMomentum,
     };
 
     res.json(tasteProfile);

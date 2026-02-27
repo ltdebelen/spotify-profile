@@ -10,11 +10,6 @@ type MoodPoint = {
   value: number;
 };
 
-type GenreBubble = {
-  name: string;
-  weight: number;
-};
-
 type ArtistChip = {
   name: string;
   imageUrl: string;
@@ -32,6 +27,17 @@ type ListeningHabit = {
   value: number;
 };
 
+type ListeningPersonality = {
+  archetype: string;
+  summary: string;
+  traits: string[];
+};
+
+type ArtistMomentumBucket = {
+  label: string;
+  artists: string[];
+};
+
 type TasteProfileData = {
   displayName: string;
   avatarUrl?: string | null;
@@ -40,10 +46,11 @@ type TasteProfileData = {
   playlistsCount: number;
   followedArtistsCount: number;
   mood: MoodPoint[];
-  genres: GenreBubble[];
   favoriteArtists: ArtistChip[];
   topTracks: TopTrack[];
   listeningHabits: ListeningHabit[];
+  listeningPersonality: ListeningPersonality;
+  artistMomentum: ArtistMomentumBucket[];
 };
 
 type TasteProfileProps = {
@@ -190,25 +197,54 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             </div>
           </motion.section>
 
-          {/* Top Genres bubbles (textual, not real chart yet) */}
+          {/* Listening Personality + Artist Momentum */}
           <motion.section
             className='col-span-1 rounded-2xl border border-slate-800 bg-slate-900/80 p-4'
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h2 className='text-2xl font-semibold mb-5'>Top Genres</h2>
+            {/* Listening Personality */}
+            <h2 className='text-2xl font-semibold mb-1'>
+              {data.listeningPersonality.archetype}
+            </h2>
+            <p className='text-xl text-slate-400 mb-3'>
+              {data.listeningPersonality.summary}
+            </p>
 
-            <div className='flex flex-wrap gap-x-4 gap-y-3 justify-start items-center min-h-[56px]'>
-              {data.genres.map((genre) => (
+            <div className='flex flex-wrap gap-2 mb-4'>
+              {data.listeningPersonality.traits.map((trait) => (
                 <span
-                  key={genre.name}
-                  className='inline-flex items-center rounded-full bg-gradient-to-r from-purple-600/70 to-indigo-500/70 text-2xl font-medium px-6 py-3 shadow-sm'
+                  key={trait}
+                  className='inline-flex items-center rounded-full bg-slate-800/80 text-lg text-slate-200 px-3 py-1 border border-slate-700/80'
                 >
-                  {genre.name}
+                  {trait}
                 </span>
               ))}
             </div>
+
+            {/* Artist Momentum */}
+            {data.artistMomentum.length > 0 && (
+              <div className='space-y-2'>
+                {data.artistMomentum.map((bucket) => (
+                  <div key={bucket.label}>
+                    <p className='text-sm font-semibold text-slate-300 mb-1'>
+                      {bucket.label}
+                    </p>
+                    <div className='flex flex-wrap gap-1'>
+                      {bucket.artists.map((name) => (
+                        <span
+                          key={name}
+                          className='inline-flex items-center rounded-full bg-gradient-to-r from-purple-600/70 to-indigo-500/70 text-xs font-medium px-2.5 py-1 shadow-sm'
+                        >
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </motion.section>
 
           {/* Favorite Artists */}
