@@ -1,5 +1,6 @@
-import Dashboard from './Dashboard';
 import Login from './Login';
+import TasteProfile from './TasteProfile';
+import Dashboard from './Dashboard';
 
 const App = () => {
   const code = new URLSearchParams(window.location.search).get('code');
@@ -8,7 +9,8 @@ const App = () => {
     return <Login />;
   }
 
-  return <Dashboard code={code} />;
+  return <TasteProfile code={code} />;
+  // return <Dashboard code={code} />;
 };
 
 export default App;
