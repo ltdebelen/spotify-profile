@@ -161,7 +161,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className='flex items-center gap-4'>
-            <div className='h-20 w-20 rounded-full bg-slate-800 overflow-hidden flex items-center justify-center text-lg text-slate-400'>
+            <div className='h-24 w-24 rounded-full bg-slate-800 overflow-hidden flex items-center justify-center text-xl text-slate-400'>
               {data.avatarUrl ? (
                 <img
                   src={data.avatarUrl}
@@ -173,20 +173,20 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
               )}
             </div>
             <div className='space-y-1'>
-              <p className='text-lg uppercase tracking-[0.2em] text-slate-400'>
+              <p className='text-xl uppercase tracking-[0.2em] text-slate-400'>
                 Taste Profile
               </p>
-              <h1 className='text-3xl md:text-4xl font-semibold'>
+              <h1 className='text-4xl md:text-5xl font-semibold'>
                 Hi, {data.displayName.split(' ')[0]} — here’s your music vibe.
               </h1>
-              <p className='text-lg text-slate-400'>
+              <p className='text-xl text-slate-400'>
                 {data.country} •{' '}
                 {data.product === 'premium' ? 'Premium' : 'Free'} listener
               </p>
             </div>
           </div>
 
-          <div className='flex items-center gap-3 text-lg'>
+          <div className='flex items-center gap-3 text-xl'>
             <div className='rounded-full bg-emerald-500/10 text-emerald-300 px-3 py-1 border border-emerald-500/40'>
               <span className='font-semibold'>{data.playlistsCount}</span>{' '}
               playlists
@@ -207,15 +207,15 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
           >
-            <h2 className='text-xl font-semibold mb-2'>Mood Analysis</h2>
-            <p className='text-lg text-slate-400 mb-3'>
+            <h2 className='text-2xl font-semibold mb-2'>Mood Analysis</h2>
+            <p className='text-xl text-slate-400 mb-3'>
               Based on your energy, danceability, and valence across recent
               listening.
             </p>
 
             <div className='relative h-40 flex items-center justify-center'>
               <div className='absolute inset-6 rounded-full bg-gradient-to-tr from-indigo-500/20 via-purple-500/15 to-emerald-400/20 blur-xl' />
-              <div className='relative grid grid-cols-5 gap-1 w-full text-base text-slate-400'>
+              <div className='relative grid grid-cols-5 gap-1 w-full text-lg text-slate-400'>
                 {data.mood.map((m) => (
                   <div
                     key={m.axis}
@@ -227,7 +227,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
                         style={{ height: `${m.value * 100}%` }}
                       />
                     </div>
-                    <span className='text-base text-center'>{m.axis}</span>
+                    <span className='text-lg text-center'>{m.axis}</span>
                   </div>
                 ))}
               </div>
@@ -241,13 +241,13 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h2 className='text-xl font-semibold mb-5'>Top Genres</h2>
+            <h2 className='text-2xl font-semibold mb-5'>Top Genres</h2>
 
             <div className='flex flex-wrap gap-x-4 gap-y-3 justify-start items-center min-h-[56px]'>
               {data.genres.map((genre) => (
                 <span
                   key={genre.name}
-                  className='inline-flex items-center rounded-full bg-gradient-to-r from-purple-600/70 to-indigo-500/70 text-xl font-medium px-4 py-2 shadow-sm'
+                  className='inline-flex items-center rounded-full bg-gradient-to-r from-purple-600/70 to-indigo-500/70 text-2xl font-medium px-6 py-3 shadow-sm'
                 >
                   {genre.name}
                 </span>
@@ -262,8 +262,8 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
           >
-            <h2 className='text-xl font-semibold mb-2'>Favorite Artists</h2>
-            <p className='text-lg text-slate-400 mb-3'>
+            <h2 className='text-2xl font-semibold mb-2'>Favorite Artists</h2>
+            <p className='text-xl text-slate-400 mb-3'>
               Your most played + followed artists blend.
             </p>
 
@@ -271,7 +271,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
               {data.favoriteArtists.slice(0, 4).map((artist) => (
                 <div
                   key={artist.name}
-                  className='h-10 w-10 rounded-full border border-slate-900 overflow-hidden'
+                  className='h-14 w-14 rounded-full border border-slate-900 overflow-hidden'
                 >
                   <img
                     src={artist.imageUrl}
@@ -282,7 +282,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
               ))}
             </div>
 
-            <ul className='space-y-1 text-lg text-slate-300'>
+            <ul className='space-y-1 text-xl text-slate-300'>
               {data.favoriteArtists.map((artist) => (
                 <li key={artist.name}>• {artist.name}</li>
               ))}
@@ -300,11 +300,11 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             transition={{ delay: 0.2 }}
           >
             <div className='flex items-center justify-between mb-3'>
-              <h2 className='text-xl font-semibold'>Top Tracks</h2>
+              <h2 className='text-2xl font-semibold'>Top Tracks</h2>
               <Button
                 size='sm'
                 variant='outline'
-                className='border-slate-700 bg-slate-900/80 text-lg h-7 px-2'
+                className='border-slate-700 bg-slate-900/80 text-xl h-8 px-3'
               >
                 Open in Spotify
               </Button>
@@ -316,10 +316,10 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
                   key={track.rank}
                   className='flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-800/70 transition-colors'
                 >
-                  <span className='w-5 text-base text-slate-400'>
+                  <span className='w-5 text-lg text-slate-400'>
                     {track.rank}.
                   </span>
-                  <div className='h-9 w-9 rounded-md overflow-hidden flex-shrink-0'>
+                  <div className='h-14 w-14 rounded-md overflow-hidden flex-shrink-0'>
                     <img
                       src={track.albumArt}
                       alt={track.title}
@@ -327,10 +327,10 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
                     />
                   </div>
                   <div className='flex flex-col min-w-0'>
-                    <span className='text-lg font-medium truncate'>
+                    <span className='text-xl font-medium truncate'>
                       {track.title}
                     </span>
-                    <span className='text-base text-slate-400 truncate'>
+                    <span className='text-lg text-slate-400 truncate'>
                       {track.artist}
                     </span>
                   </div>
@@ -346,8 +346,8 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
           >
-            <h2 className='text-xl font-semibold mb-2'>Listening Habits</h2>
-            <p className='text-lg text-slate-400 mb-3'>
+            <h2 className='text-2xl font-semibold mb-2'>Listening Habits</h2>
+            <p className='text-xl text-slate-400 mb-3'>
               When you tend to listen the most.
             </p>
 
@@ -363,7 +363,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
                       style={{ height: `${slot.value * 100}%` }}
                     />
                   </div>
-                  <span className='text-base text-slate-400 text-center'>
+                  <span className='text-lg text-slate-400 text-center'>
                     {slot.label}
                   </span>
                 </div>
