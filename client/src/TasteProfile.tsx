@@ -166,7 +166,10 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
               listening.
             </p>
 
-            <div className='relative h-40 flex items-center justify-center'>
+            <div
+              className='relative h-40 flex items-center justify-center'
+              style={{ marginTop: '10rem' }}
+            >
               <div className='absolute inset-6 rounded-full bg-gradient-to-tr from-indigo-500/20 via-purple-500/15 to-emerald-400/20 blur-xl' />
               <div className='relative grid grid-cols-5 gap-1 w-full text-lg text-slate-400'>
                 {data.mood.map((m) => (
@@ -174,7 +177,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
                     key={m.axis}
                     className='flex flex-col items-center gap-1'
                   >
-                    <div className='h-20 w-2 rounded-full bg-slate-800 overflow-hidden'>
+                    <div className='h-80 w-2 rounded-full bg-slate-800 overflow-hidden'>
                       <div
                         className='w-full bg-gradient-to-t from-emerald-400 to-purple-400'
                         style={{ height: `${m.value * 100}%` }}
@@ -293,21 +296,23 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
               When you tend to listen the most.
             </p>
 
-            <div className='flex items-end gap-2 h-40'>
+            <div className='space-y-4'>
               {data.listeningHabits.map((slot) => (
-                <div
-                  key={slot.label}
-                  className='flex-1 flex flex-col items-center gap-1'
-                >
-                  <div className='w-7 rounded-t-md bg-gradient-to-t from-purple-500 to-emerald-400'>
-                    <div
-                      className='w-full bg-transparent'
-                      style={{ height: `${slot.value * 100}%` }}
-                    />
-                  </div>
-                  <span className='text-lg text-slate-400 text-center'>
+                <div key={slot.label} className='flex items-center gap-3'>
+                  <span className='w-32 text-lg text-slate-400 text-right'>
                     {slot.label}
                   </span>
+                  <motion.div
+                    className='h-7 rounded-md bg-gradient-to-r from-purple-500 to-emerald-400 shadow-md flex items-center'
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.max(slot.value * 100, 8)}%` }}
+                    transition={{ type: 'spring', stiffness: 80, damping: 18 }}
+                    style={{ minWidth: '2rem', maxWidth: '100%' }}
+                  >
+                    <span className='ml-2 text-slate-50 font-semibold'>
+                      {Math.round(slot.value * 100)}%
+                    </span>
+                  </motion.div>
                 </div>
               ))}
             </div>
