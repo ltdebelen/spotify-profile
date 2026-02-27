@@ -18,6 +18,10 @@ const Login = () => {
       'user-read-playback-state',
       'user-read-email',
       'user-read-private',
+      'user-top-read',
+      'playlist-read-private',
+      'user-follow-read',
+      'user-read-recently-played',
     ].join('%20');
 
   return (

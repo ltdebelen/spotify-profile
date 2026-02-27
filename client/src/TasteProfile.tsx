@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import useAuth from './useAuth';
-import { Button } from './components/ui/button';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 
 type MoodAxis = 'Energetic' | 'Happy' | 'Chill' | 'Danceable' | 'Melancholy';
 
@@ -45,103 +46,33 @@ type TasteProfileData = {
   listeningHabits: ListeningHabit[];
 };
 
-const mockTasteProfile: TasteProfileData = {
-  displayName: 'Lawrence De Belen',
-  avatarUrl: null,
-  country: 'US',
-  product: 'premium',
-  playlistsCount: 42,
-  followedArtistsCount: 22,
-  mood: [
-    { axis: 'Energetic', value: 0.75 },
-    { axis: 'Happy', value: 0.7 },
-    { axis: 'Chill', value: 0.55 },
-    { axis: 'Danceable', value: 0.8 },
-    { axis: 'Melancholy', value: 0.4 },
-  ],
-  genres: [
-    { name: 'K-Pop', weight: 1.0 },
-    { name: 'P-Pop / OPM', weight: 0.9 },
-    { name: 'Hip Hop / Rap', weight: 0.7 },
-    { name: 'Pop', weight: 0.6 },
-    { name: 'R&B', weight: 0.55 },
-    { name: 'Soft Rock', weight: 0.4 },
-  ],
-  favoriteArtists: [
-    {
-      name: 'TWICE',
-      imageUrl:
-        'https://i.scdn.co/image/ab6761610000e5eb3d8820046fd455b38d644864',
-    },
-    {
-      name: 'BINI',
-      imageUrl:
-        'https://i.scdn.co/image/ab6761610000e5eb8b10e8b83993fa8dc12ace18',
-    },
-    {
-      name: 'NewJeans',
-      imageUrl:
-        'https://i.scdn.co/image/ab6761610000e5eb8dae71b664393f38ba91f891',
-    },
-    {
-      name: 'Hev Abi',
-      imageUrl:
-        'https://i.scdn.co/image/ab6761610000e5ebd2b019b0ca5be2662b96831c',
-    },
-  ],
-  topTracks: [
-    {
-      rank: 1,
-      title: 'Sample Track 1',
-      artist: 'TWICE',
-      albumArt:
-        'https://i.scdn.co/image/ab6761610000e5eb3d8820046fd455b38d644864',
-    },
-    {
-      rank: 2,
-      title: 'Sample Track 2',
-      artist: 'BINI',
-      albumArt:
-        'https://i.scdn.co/image/ab6761610000e5eb8b10e8b83993fa8dc12ace18',
-    },
-    {
-      rank: 3,
-      title: 'Sample Track 3',
-      artist: 'NewJeans',
-      albumArt:
-        'https://i.scdn.co/image/ab6761610000e5eb8dae71b664393f38ba91f891',
-    },
-    {
-      rank: 4,
-      title: 'Sample Track 4',
-      artist: 'Drake',
-      albumArt:
-        'https://i.scdn.co/image/ab6761610000e5eb4293385d324db8558179afd9',
-    },
-    {
-      rank: 5,
-      title: 'Sample Track 5',
-      artist: 'The Weeknd',
-      albumArt:
-        'https://i.scdn.co/image/ab6761610000e5eb9e528993a2820267b97f6aae',
-    },
-  ],
-  listeningHabits: [
-    { label: 'Morning', value: 0.3 },
-    { label: 'Afternoon', value: 0.55 },
-    { label: 'Evening', value: 0.8 },
-    { label: 'Late Night', value: 0.95 },
-  ],
-};
-
 type TasteProfileProps = {
   code: string;
 };
 
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
+
 const TasteProfile = ({ code }: TasteProfileProps) => {
   const accessToken = useAuth(code);
 
-  const data = mockTasteProfile;
+  const { data, isLoading, isError } = useQuery<TasteProfileData>({
+    queryKey: ['taste-profile', accessToken],
+    enabled: !!accessToken,
+    queryFn: async () => {
+      if (!accessToken) throw new Error('Missing access token');
+
+      const res = await axios.get<TasteProfileData>(
+        `${SERVER_URL}/taste-profile`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        },
+      );
+
+      return res.data;
+    },
+  });
 
   if (!accessToken) {
     return (
@@ -149,6 +80,28 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
         <p className='text-slate-400 text-sm'>Connecting to Spotify…</p>
       </div>
     );
+  }
+
+  if (isLoading || !data) {
+    return (
+      <div className='min-h-screen flex items-center justify-center bg-slate-950 text-slate-50'>
+        <p className='text-slate-400 text-sm'>Building your taste profile…</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className='min-h-screen flex items-center justify-center bg-slate-950 text-slate-50'>
+        <p className='text-red-400 text-sm'>
+          Failed to load your taste profile. Please try again.
+        </p>
+      </div>
+    );
+  }
+
+  {
+    console.log('data', data);
   }
 
   return (
@@ -299,17 +252,6 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <div className='flex items-center justify-between mb-3'>
-              <h2 className='text-2xl font-semibold'>Top Tracks</h2>
-              <Button
-                size='sm'
-                variant='outline'
-                className='border-slate-700 bg-slate-900/80 text-xl h-8 px-3'
-              >
-                Open in Spotify
-              </Button>
-            </div>
-
             <div className='space-y-1'>
               {data.topTracks.map((track) => (
                 <div
