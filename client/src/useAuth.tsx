@@ -1,47 +1,63 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 
-export default function useAuth(code) {
-  const [accessToken, setAccessToken] = useState();
-  const [refreshToken, setRefreshToken] = useState();
-  const [expiresIn, setExpiresIn] = useState();
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
 
-  // Login
+type LoginResponse = {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+};
+
+const useAuth = (code: string) => {
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
+  const [expiresIn, setExpiresIn] = useState<number | null>(null);
+
+  // 1) exchange code → tokens
   useEffect(() => {
+    if (!code) return;
+
     axios
-      .post('http://localhost:4000/login', { code })
+      .post<LoginResponse>(`${SERVER_URL}/login`, { code })
       .then((res) => {
         setAccessToken(res.data.accessToken);
         setRefreshToken(res.data.refreshToken);
         setExpiresIn(res.data.expiresIn);
-        window.history.pushState({}, document.title, '/');
+
+        // remove ?code= from URL
+        window.history.pushState({}, '', '/');
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('login error', err);
         window.location.href = '/';
       });
   }, [code]);
 
-  // Refresh
+  // 2) refresh access token
   useEffect(() => {
     if (!refreshToken || !expiresIn) return;
 
-    const interval = setInterval(
+    const interval = window.setInterval(
       () => {
         axios
-          .post('http://localhost:4000/refresh', { refreshToken })
+          .post<LoginResponse>(`${SERVER_URL}/refresh`, { refreshToken })
           .then((res) => {
             setAccessToken(res.data.accessToken);
             setExpiresIn(res.data.expiresIn);
           })
-          .catch(() => {
-            // window.location.href = '/';
+          .catch((err) => {
+            console.error('refresh error', err);
+            window.location.href = '/';
           });
       },
       (expiresIn - 60) * 1000,
-    );
+    ); // refresh 1 minute before expiry
 
     return () => clearInterval(interval);
   }, [refreshToken, expiresIn]);
 
   return accessToken;
-}
+};
+
+export default useAuth;

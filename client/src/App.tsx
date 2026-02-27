@@ -1,10 +1,14 @@
 import Dashboard from './Dashboard';
 import Login from './Login';
 
-const code = new URLSearchParams(window.location.search).get('code');
-
 const App = () => {
-  return code ? <Dashboard code={code} /> : <Login />;
+  const code = new URLSearchParams(window.location.search).get('code');
+
+  if (!code) {
+    return <Login />;
+  }
+
+  return <Dashboard code={code} />;
 };
 
 export default App;

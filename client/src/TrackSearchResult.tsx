@@ -1,16 +1,29 @@
-const TrackSearchResult = ({ track, handlePlay, chooseTrack }) => {
-  function handlePlay() {
-    chooseTrack(track);
-  }
+import type { Track } from './Dashboard';
 
+type TrackSearchResultProps = {
+  track: Track;
+  chooseTrack: (track: Track) => void;
+};
+
+const TrackSearchResult = ({ track, chooseTrack }: TrackSearchResultProps) => {
   return (
-    <div className='flex m-2 align-center cursor-pointer' onClick={handlePlay}>
-      <img src={track.albumUrl} style={{ height: '64px', width: '64px' }} />
-      <div className='ml-3'>
-        <div>{track.title}</div>
-        <div>{track.artist}</div>
+    <button
+      type='button'
+      onClick={() => chooseTrack(track)}
+      className='w-full flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 hover:bg-slate-800/80 transition-colors text-left'
+    >
+      <div className='h-12 w-12 flex-shrink-0 overflow-hidden rounded'>
+        <img
+          src={track.albumUrl}
+          alt={track.title}
+          className='h-full w-full object-cover'
+        />
       </div>
-    </div>
+      <div className='flex flex-col flex-1 min-w-0'>
+        <span className='text-sm font-medium truncate'>{track.title}</span>
+        <span className='text-xs text-slate-400 truncate'>{track.artist}</span>
+      </div>
+    </button>
   );
 };
 
