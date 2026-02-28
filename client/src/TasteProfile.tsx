@@ -86,6 +86,10 @@ type ArtistDetail = {
   spotifyUrl: string | null;
 };
 
+type LyricsResponse = {
+  lyrics: string | null;
+};
+
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
 
 function getListeningPersonalityIcon(archetype: string) {
@@ -159,6 +163,32 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
     }
   }, [data]);
 
+  const topTracksForLyrics = data?.topTracks ?? [];
+  const currentTrack =
+    topTracksForLyrics.length > 0
+      ? topTracksForLyrics[
+          Math.min(currentIndex, topTracksForLyrics.length - 1)
+        ]
+      : null;
+
+  const {
+    data: lyricsData,
+    isLoading: isLyricsLoading,
+    isError: isLyricsError,
+  } = useQuery<LyricsResponse>({
+    queryKey: ['lyrics', currentTrack?.title, currentTrack?.artist],
+    enabled: !!currentTrack?.title && !!currentTrack?.artist,
+    queryFn: async () => {
+      const res = await axios.get<LyricsResponse>(`${SERVER_URL}/lyrics`, {
+        params: {
+          title: currentTrack!.title,
+          artist: currentTrack!.artist,
+        },
+      });
+      return res.data;
+    },
+  });
+
   if (!accessToken) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-slate-950 text-slate-50'>
@@ -197,11 +227,6 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
   const currentTrackUri =
     trackUris.length > 0 && currentIndex >= 0 && currentIndex < trackUris.length
       ? trackUris[currentIndex]
-      : null;
-
-  const currentTrack =
-    data.topTracks && data.topTracks.length > 0
-      ? data.topTracks[Math.min(currentIndex, data.topTracks.length - 1)]
       : null;
 
   return (
@@ -450,14 +475,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             <h2 className='text-2xl font-semibold mb-2'>Lyrics</h2>
 
             {currentTrack ? (
-              <>
-                <p className='text-sm text-slate-400 mb-4'>
-                  Showing info for your current track.
-                  <br />
-                  Lyrics aren&apos;t provided by the Spotify API, but this card
-                  is ready for a lyrics integration.
-                </p>
-
+              <div className='space-y-4'>
                 <div className='rounded-xl border border-slate-700 bg-slate-900/80 p-4 flex flex-col items-center gap-3'>
                   <div className='h-24 w-24 rounded-lg overflow-hidden mb-1'>
                     <img
@@ -474,15 +492,32 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
                       {currentTrack.artist}
                     </p>
                   </div>
-                  <div className='mt-3 w-full rounded-lg border border-slate-800 bg-slate-950/80 px-3 py-2'>
-                    <p className='text-xs text-slate-500'>🎵 Lyrics preview</p>
-                    <p className='mt-1 text-xs text-slate-400'>
-                      Hook this section up to a lyrics provider (via your own
-                      backend) to stream lines from the song while it plays.
-                    </p>
-                  </div>
                 </div>
-              </>
+
+                {isLyricsLoading && (
+                  <p className='text-sm text-slate-400 text-center'>
+                    Loading lyrics…
+                  </p>
+                )}
+
+                {isLyricsError && (
+                  <p className='text-sm text-red-400 text-center'>
+                    Failed to load lyrics.
+                  </p>
+                )}
+
+                {lyricsData?.lyrics && (
+                  <pre className='whitespace-pre-wrap text-sm text-slate-300 bg-slate-900/80 p-3 rounded-lg border border-slate-800 max-h-150 overflow-y-auto'>
+                    {lyricsData.lyrics}
+                  </pre>
+                )}
+
+                {!isLyricsLoading && !lyricsData?.lyrics && !isLyricsError && (
+                  <p className='text-sm text-slate-500 text-center'>
+                    No lyrics found.
+                  </p>
+                )}
+              </div>
             ) : (
               <p className='text-sm text-slate-400'>
                 Start playing one of your top tracks to see track details here.

@@ -365,6 +365,47 @@ app.get('/artist-info', async (req, res) => {
 });
 
 /* ------------------------
+   GET /lyrics
+------------------------ */
+app.get('/lyrics', async (req, res) => {
+  const { title, artist } = req.query;
+
+  if (!title || !artist) {
+    return res.status(400).json({ lyrics: null });
+  }
+
+  try {
+    const url = `https://api.lyrics.ovh/v1/${encodeURIComponent(
+      artist,
+    )}/${encodeURIComponent(title)}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data && data.lyrics) {
+      let lyrics = data.lyrics;
+
+      const lines = lyrics.split('\n');
+
+      const firstLine = lines[0].trim().toLowerCase();
+
+      if (firstLine.includes('paroles de la chanson')) {
+        lines.shift();
+      }
+
+      lyrics = lines.join('\n').trim();
+
+      return res.json({ lyrics });
+    }
+
+    return res.json({ lyrics: null });
+  } catch (err) {
+    console.error('lyrics error', err);
+    return res.json({ lyrics: null });
+  }
+});
+
+/* ------------------------
    Health Check
 ------------------------ */
 app.get('/health', (_req, res) => {
