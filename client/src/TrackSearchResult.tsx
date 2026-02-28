@@ -1,11 +1,10 @@
-import type { Track } from './Dashboard';
-
-type TrackSearchResultProps = {
-  track: Track;
-  chooseTrack: (track: Track) => void;
-};
-
-const TrackSearchResult = ({ track, chooseTrack }: TrackSearchResultProps) => {
+const TrackSearchResult = ({
+  track,
+  chooseTrack,
+}: {
+  track: any;
+  chooseTrack: (track: any) => void;
+}) => {
   return (
     <button
       type='button'

@@ -1,5 +1,3 @@
-import { motion } from 'framer-motion';
-
 export type MoodPoint = {
   axis: string;
   value: number;
