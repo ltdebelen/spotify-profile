@@ -31,6 +31,7 @@ type MoodPoint = {
 };
 
 type ArtistChip = {
+  id: string;
   name: string;
   imageUrl: string;
 };
@@ -76,6 +77,13 @@ type TasteProfileData = {
 
 type TasteProfileProps = {
   code: string;
+};
+
+type ArtistDetail = {
+  id: string;
+  name: string;
+  imageUrl: string;
+  spotifyUrl: string | null;
 };
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
@@ -127,6 +135,23 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
     },
   });
 
+  // Artist info query
+  const {
+    data: artistInfo,
+    isLoading: isArtistLoading,
+    isError: isArtistError,
+  } = useQuery<ArtistDetail>({
+    queryKey: ['artist-info', selectedArtist?.id, accessToken],
+    enabled: !!accessToken && !!selectedArtist?.id && isArtistDialogOpen,
+    queryFn: async () => {
+      const res = await axios.get<ArtistDetail>(`${SERVER_URL}/artist-info`, {
+        params: { id: selectedArtist?.id },
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return res.data;
+    },
+  });
+
   // Reset to first track when new data loads
   useEffect(() => {
     if (data?.topTracks?.length) {
@@ -164,7 +189,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
     data.listeningPersonality.archetype,
   );
 
-  // Build URI list for the player (only tracks that actually have a uri)
+  // Build URI list for the player
   const trackUris = (data.topTracks || [])
     .map((t) => t.uri)
     .filter((uri): uri is string => Boolean(uri));
@@ -228,7 +253,6 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
 
         {/* Main grid */}
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-4'>
-          {/* Mood Analysis + Listening Habits */}
           <motion.section
             className='col-span-1 rounded-2xl border border-slate-800 bg-slate-900/80 p-4'
             initial={{ opacity: 0, y: 12 }}
@@ -254,14 +278,13 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             </div>
           </motion.section>
 
-          {/* Listening Personality + Artist Momentum */}
+          {/* Personality + Momentum */}
           <motion.section
             className='col-span-1 rounded-2xl border border-slate-800 bg-slate-900/80 p-4'
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            {/* Listening Personality */}
             <div className='flex items-center gap-2 mb-5'>
               <PersonalityIcon className='w-10 h-10 text-emerald-300' />
               <h2 className='text-2xl font-semibold'>
@@ -283,7 +306,6 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
               ))}
             </div>
 
-            {/* Artist Momentum */}
             {data.artistMomentum.length > 0 && (
               <div className='space-y-2'>
                 {data.artistMomentum.map((bucket) => (
@@ -321,7 +343,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
 
             <ul className='space-y-1 text-slate-300'>
               {data.favoriteArtists.map((artist) => (
-                <li key={artist.name}>
+                <li key={artist.id}>
                   <button
                     type='button'
                     onClick={() => {
@@ -353,7 +375,6 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
 
         {/* Bottom grid: Top Tracks & Lyrics */}
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-4'>
-          {/* Top Tracks */}
           <motion.section
             className='col-span-2 rounded-2xl border border-slate-800 bg-slate-900/80 p-4'
             initial={{ opacity: 0, y: 12 }}
@@ -419,7 +440,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             </div>
           </motion.section>
 
-          {/* Lyrics / Now Playing */}
+          {/* Lyrics */}
           <motion.section
             className='col-span-1 rounded-2xl border border-slate-800 bg-slate-900/80 p-4'
             initial={{ opacity: 0, y: 12 }}
@@ -471,14 +492,12 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
         </div>
       </div>
 
-      {/* Artist Detail Dialog */}
+      {/* Artist Dialog */}
       <Dialog
         open={isArtistDialogOpen && !!selectedArtist}
         onOpenChange={(open) => {
           setIsArtistDialogOpen(open);
-          if (!open) {
-            setSelectedArtist(null);
-          }
+          if (!open) setSelectedArtist(null);
         }}
       >
         <DialogContent className='max-w-md bg-slate-950 border-slate-800 text-slate-50'>
@@ -491,28 +510,67 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className='mt-4 flex flex-col items-center gap-4'>
-            <div className='h-32 w-32 rounded-full overflow-hidden border border-slate-700'>
-              {selectedArtist?.imageUrl ? (
-                <img
-                  src={selectedArtist.imageUrl}
-                  alt={selectedArtist.name}
-                  className='h-full w-full object-cover'
-                />
-              ) : (
-                <div className='h-full w-full flex items-center justify-center text-sm text-slate-500 bg-slate-800'>
-                  No image
-                </div>
-              )}
+          <div className='mt-4 flex flex-col gap-4'>
+            {/* Artist Image */}
+            <div className='flex flex-col items-center gap-4'>
+              <div className='h-32 w-32 rounded-full overflow-hidden border border-slate-700'>
+                {selectedArtist?.imageUrl ? (
+                  <img
+                    src={selectedArtist.imageUrl}
+                    alt={selectedArtist.name}
+                    className='h-full w-full object-cover'
+                  />
+                ) : (
+                  <div className='h-full w-full flex items-center justify-center text-sm text-slate-500 bg-slate-800'>
+                    No image
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Placeholder description for now. You can later swap this
-                with real data from a /artist/:id endpoint. */}
-            <p className='text-sm md:text-base text-slate-300 text-center leading-relaxed'>
-              This artist shows up often in your recent listening. In a future
-              iteration, this panel can pull in Spotify bio, top tracks, and
-              related artists for a deeper dive.
-            </p>
+            {/* Loading */}
+            {isArtistLoading && (
+              <p className='text-sm text-slate-400 text-center'>
+                Loading artist details…
+              </p>
+            )}
+
+            {/* Error */}
+            {isArtistError && !isArtistLoading && (
+              <p className='text-sm text-red-400 text-center'>
+                Failed to load artist details. Please try again.
+              </p>
+            )}
+
+            {/* Info */}
+            {artistInfo && !isArtistLoading && !isArtistError && (
+              <div className='space-y-4 text-center'>
+                {artistInfo.spotifyUrl && (
+                  <a
+                    href={artistInfo.spotifyUrl}
+                    target='_blank'
+                    rel='noreferrer'
+                    className='inline-flex items-center justify-center text-xs text-emerald-300 hover:text-emerald-200 underline underline-offset-4'
+                  >
+                    View on Spotify
+                  </a>
+                )}
+
+                {!artistInfo.spotifyUrl && (
+                  <p className='text-sm text-slate-400'>
+                    No additional details available.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Fallback */}
+            {!artistInfo && !isArtistLoading && !isArtistError && (
+              <p className='text-sm text-slate-300 text-center leading-relaxed'>
+                This artist shows up often in your recent listening. Details
+                will appear here once available.
+              </p>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -529,18 +587,13 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             hideAttribution
             initialVolume={0.5}
             callback={(state) => {
-              if (!state.isPlaying) {
-                setIsPlaying(false);
-              } else {
-                setIsPlaying(true);
-              }
+              if (!state.isPlaying) setIsPlaying(false);
+              else setIsPlaying(true);
 
               const uri = state?.track?.uri;
               if (uri) {
                 const idx = trackUris.findIndex((tUri) => tUri === uri);
-                if (idx !== -1) {
-                  setCurrentIndex(idx);
-                }
+                if (idx !== -1) setCurrentIndex(idx);
               }
             }}
             styles={{

@@ -24,12 +24,12 @@ function createSpotifyClient(accessToken) {
   return spotifyApi;
 }
 
-// POST /login – exchange code for tokens
+/* ------------------------
+   POST /login
+------------------------ */
 app.post('/login', (req, res) => {
   const code = req.body.code;
-  if (!code) {
-    return res.status(400).json({ error: 'Missing code' });
-  }
+  if (!code) return res.status(400).json({ error: 'Missing code' });
 
   const spotifyApi = new SpotifyWebApi(spotifyConfig);
 
@@ -48,12 +48,13 @@ app.post('/login', (req, res) => {
     });
 });
 
-// POST /refresh – refresh access token
+/* ------------------------
+   POST /refresh
+------------------------ */
 app.post('/refresh', (req, res) => {
   const { refreshToken } = req.body;
-  if (!refreshToken) {
+  if (!refreshToken)
     return res.status(400).json({ error: 'Missing refreshToken' });
-  }
 
   const spotifyApi = new SpotifyWebApi({
     ...spotifyConfig,
@@ -74,10 +75,11 @@ app.post('/refresh', (req, res) => {
     });
 });
 
-// GET /taste-profile – build a taste profile from Spotify
+/* ------------------------
+   GET /taste-profile
+------------------------ */
 app.get('/taste-profile', async (req, res) => {
-  const authHeader = req.headers.authorization || '';
-  const tokenMatch = authHeader.match(/^Bearer (.+)$/);
+  const tokenMatch = (req.headers.authorization || '').match(/^Bearer (.+)$/);
 
   if (!tokenMatch) {
     return res
@@ -112,26 +114,8 @@ app.get('/taste-profile', async (req, res) => {
     const followedArtistsPage = followedRes.body;
     const recent = recentRes ? recentRes.body : null;
 
-    // Audio features for mood
-    let audioFeatures = [];
-    try {
-      const trackIds = topTracks.map((t) => t.id).filter(Boolean);
-      if (trackIds.length > 0) {
-        const featuresRes =
-          await spotifyApi.getAudioFeaturesForTracks(trackIds);
-        audioFeatures = (featuresRes.body.audio_features || []).filter(Boolean);
-      }
-    } catch (err) {
-      const status = err?.body?.error?.status;
-      // Spotify is currently returning 403 for this endpoint on many apps.
-      // We just ignore that case and fall back to neutral mood instead of spamming the console.
-      if (status !== 403) {
-        console.error('audio features error', err?.body || err);
-      }
-    }
-
     const displayName = me.display_name || 'Spotify User';
-    const avatarUrl = (me.images && me.images[0] && me.images[0].url) || null;
+    const avatarUrl = me.images?.[0]?.url || null;
     const country = me.country || 'Unknown';
     const product = me.product || 'free';
 
@@ -142,55 +126,53 @@ app.get('/taste-profile', async (req, res) => {
 
     const followedArtistsCount = followedArtistsPage?.artists?.total || 0;
 
-    // Favorite artists
+    /* ---- Favorite Artists ---- */
     const favoriteArtists = topArtists.slice(0, 12).map((artist) => ({
+      id: artist.id,
       name: artist.name,
-      imageUrl: artist.images && artist.images[0] ? artist.images[0].url : '',
+      imageUrl: artist.images?.[0]?.url || '',
     }));
 
-    // Top tracks
+    /* ---- Top Tracks ---- */
     const topTracksMapped = topTracks.slice(0, 10).map((track, idx) => ({
       rank: idx + 1,
       title: track.name,
-      artist:
-        track.artists && track.artists[0]
-          ? track.artists[0].name
-          : 'Unknown artist',
-      albumArt:
-        track.album && track.album.images && track.album.images[0]
-          ? track.album.images[0].url
-          : '',
+      artist: track.artists?.[0]?.name || 'Unknown artist',
+      albumArt: track.album?.images?.[0]?.url || '',
       uri: track.uri,
     }));
 
-    // Mood from audio features (falls back to neutral-ish if audioFeatures is empty)
-    const average = (arr, key) =>
+    /* ---- Mood ---- */
+    let audioFeatures = [];
+    try {
+      const trackIds = topTracks.map((t) => t.id).filter(Boolean);
+      if (trackIds.length > 0) {
+        const featuresRes =
+          await spotifyApi.getAudioFeaturesForTracks(trackIds);
+        audioFeatures = (featuresRes.body.audio_features || []).filter(Boolean);
+      }
+    } catch (_) {}
+
+    const avg = (arr, key) =>
       arr.length
         ? arr.reduce((sum, f) => sum + (f[key] || 0), 0) / arr.length
         : 0;
 
-    const avgEnergy = average(audioFeatures, 'energy');
-    const avgValence = average(audioFeatures, 'valence');
-    const avgDanceability = average(audioFeatures, 'danceability');
-
     const mood = [
-      { axis: 'Energetic', value: avgEnergy },
-      { axis: 'Happy', value: avgValence },
+      { axis: 'Energetic', value: avg(audioFeatures, 'energy') },
+      { axis: 'Happy', value: avg(audioFeatures, 'valence') },
       {
         axis: 'Chill',
-        value: 1 - avgEnergy * 0.6 - avgDanceability * 0.4,
+        value:
+          1 -
+          avg(audioFeatures, 'energy') * 0.6 -
+          avg(audioFeatures, 'danceability') * 0.4,
       },
-      { axis: 'Danceable', value: avgDanceability },
-      {
-        axis: 'Melancholy',
-        value: 1 - avgValence,
-      },
-    ].map((m) => ({
-      ...m,
-      value: Math.max(0, Math.min(1, m.value || 0)),
-    }));
+      { axis: 'Danceable', value: avg(audioFeatures, 'danceability') },
+      { axis: 'Melancholy', value: 1 - avg(audioFeatures, 'valence') },
+    ].map((m) => ({ ...m, value: Math.max(0, Math.min(1, m.value)) }));
 
-    // Listening habits from recently played
+    /* ---- Listening Habits ---- */
     const bucketCounts = {
       Morning: 0,
       Afternoon: 0,
@@ -198,49 +180,36 @@ app.get('/taste-profile', async (req, res) => {
       'Late Night': 0,
     };
 
-    if (recent && Array.isArray(recent.items)) {
+    if (recent?.items) {
       recent.items.forEach((item) => {
-        const playedAt = item.played_at;
-        if (!playedAt) return;
-        const hour = new Date(playedAt).getHours(); // 0–23 UTC
-
-        if (hour >= 5 && hour < 12) bucketCounts.Morning += 1;
-        else if (hour >= 12 && hour < 17) bucketCounts.Afternoon += 1;
-        else if (hour >= 17 && hour < 23) bucketCounts.Evening += 1;
-        else bucketCounts['Late Night'] += 1;
+        const hour = new Date(item.played_at).getHours();
+        if (hour >= 5 && hour < 12) bucketCounts.Morning++;
+        else if (hour >= 12 && hour < 17) bucketCounts.Afternoon++;
+        else if (hour >= 17 && hour < 23) bucketCounts.Evening++;
+        else bucketCounts['Late Night']++;
       });
     }
 
-    const totalBuckets =
-      bucketCounts.Morning +
-        bucketCounts.Afternoon +
-        bucketCounts.Evening +
-        bucketCounts['Late Night'] || 1;
+    const total = Object.values(bucketCounts).reduce((a, b) => a + b, 0) || 1;
+    const listeningHabits = Object.entries(bucketCounts).map(([label, c]) => ({
+      label,
+      value: c / total,
+    }));
 
-    const listeningHabits = Object.entries(bucketCounts).map(
-      ([label, count]) => ({
-        label,
-        value: count / totalBuckets,
-      }),
+    /* ---- Personality ---- */
+    const habitMap = Object.fromEntries(
+      listeningHabits.map((h) => [h.label, h.value]),
     );
 
-    // --- Listening Personality ---
-    const habitMap = {};
-    listeningHabits.forEach((h) => {
-      habitMap[h.label] = h.value;
-    });
+    const night = (habitMap['Late Night'] || 0) + (habitMap['Evening'] || 0);
+    const morning = habitMap['Morning'] || 0;
+    const afternoon = habitMap['Afternoon'] || 0;
 
-    const nightShare =
-      (habitMap['Late Night'] || 0) + (habitMap['Evening'] || 0);
-    const morningShare = habitMap['Morning'] || 0;
-    const afternoonShare = habitMap['Afternoon'] || 0;
-
-    const energeticScore =
-      (mood.find((m) => m.axis === 'Energetic')?.value || 0) +
-      (mood.find((m) => m.axis === 'Danceable')?.value || 0);
-    const chillScore = mood.find((m) => m.axis === 'Chill')?.value || 0;
-    const melancholyScore =
-      mood.find((m) => m.axis === 'Melancholy')?.value || 0;
+    const energetic =
+      mood.find((m) => m.axis === 'Energetic')?.value +
+      mood.find((m) => m.axis === 'Danceable')?.value;
+    const chill = mood.find((m) => m.axis === 'Chill')?.value;
+    const melancholy = mood.find((m) => m.axis === 'Melancholy')?.value;
 
     let listeningPersonality = {
       archetype: 'The Balanced Listener',
@@ -253,127 +222,96 @@ app.get('/taste-profile', async (req, res) => {
       ],
     };
 
-    if (nightShare > 0.55) {
+    // simple bias-based personality rules
+    if (night > 0.55)
       listeningPersonality = {
         archetype: 'The Night Rider',
         summary:
-          'Your listening peaks in the evenings and late nights, leaning into immersive music when the world is quieter.',
+          'Your listening peaks in the evenings and late nights, leaning into immersive music.',
         traits: [
-          'Most listening happens in the evening or late night',
-          'Music is a companion for focus, gaming, or winding down',
-          nightShare > 0.7
-            ? 'You thrive in late-night deep dives and long sessions'
-            : 'You enjoy ending the day with music',
+          'Prefers evenings',
+          'Likes focus/gaming music',
+          'Enjoys quiet-hour listening',
         ],
       };
-    } else if (morningShare > 0.45) {
+
+    if (morning > 0.45)
       listeningPersonality = {
         archetype: 'The Day Starter',
-        summary:
-          'You lean on music to set the tone for your day and keep momentum going.',
+        summary: 'You lean on music to set the tone for your day.',
         traits: [
-          'Frequent listening in the morning',
-          'Music used to set mood and energy early',
-          'Prefers steady, uplifting tracks to get moving',
+          'Morning listener',
+          'Motivation via music',
+          'Prefers steady uplifting tracks',
         ],
       };
-    } else if (afternoonShare > 0.5) {
+
+    if (afternoon > 0.5)
       listeningPersonality = {
         archetype: 'The Midday Driver',
-        summary:
-          'You like music as a productivity boost or a backdrop while getting things done.',
+        summary: 'Music helps your productivity in the afternoon.',
         traits: [
-          'Listening peaks in the afternoon',
-          'Music used to maintain focus or energy',
-          'Comfortable with repeat listens of familiar tracks',
+          'Afternoon listener',
+          'Focus or background music',
+          'Energetic consistency',
         ],
       };
-    }
 
-    if (energeticScore > 1.2 && nightShare > 0.4) {
+    if (energetic > 1.2 && night > 0.4)
       listeningPersonality = {
         archetype: 'The High-Energy Night Rider',
-        summary:
-          'You gravitate toward upbeat, high-impact tracks, especially later in the day.',
+        summary: 'You gravitate toward energetic tracks later in the day.',
         traits: [
-          'Prefers energetic and danceable songs',
-          'Evenings and nights are prime listening windows',
-          'Great soundtrack selector for drives, games, and late-night work',
+          'Loves upbeat tracks',
+          'Night-based listener',
+          'Great for drives/gaming',
         ],
       };
-    } else if (chillScore > 0.6 && morningShare + afternoonShare > 0.4) {
+
+    if (chill > 0.6 && morning + afternoon > 0.4)
       listeningPersonality = {
         archetype: 'The Chill Navigator',
-        summary:
-          'You favor smoother, laid-back sounds that keep you moving without overwhelming the moment.',
-        traits: [
-          'Leans toward chill or low-key tracks',
-          'Steady listening across daylight hours',
-          'Enjoys music as a comfort layer rather than the main event',
-        ],
+        summary: 'You favor smoother, laid-back sounds.',
+        traits: ['Chill listener', 'Daytime music', 'Music as a comfort layer'],
       };
-    } else if (melancholyScore > 0.5 && nightShare > 0.3) {
+
+    if (melancholy > 0.5 && night > 0.3)
       listeningPersonality = {
         archetype: 'The Late-Night Reflector',
-        summary:
-          'You’re drawn to emotional, reflective tracks, especially when the day winds down.',
-        traits: [
-          'Often listens during evenings or late nights',
-          'Music is a space for introspection and emotion',
-          'Prefers songs with emotional weight or moodier production',
-        ],
+        summary: 'You’re drawn to emotional, reflective tracks.',
+        traits: ['Night listener', 'Emotional tracks', 'Reflective mood'],
       };
-    }
 
-    // --- Artist Momentum ---
-
+    /* ---- Artist Momentum ---- */
     const recentArtistCounts = {};
-    if (recent && Array.isArray(recent.items)) {
-      recent.items.forEach((item) => {
-        const track = item.track;
-        const artistsForTrack = (track?.artists || []).map((a) => a.name);
-        artistsForTrack.forEach((name) => {
-          if (!name) return;
-          recentArtistCounts[name] = (recentArtistCounts[name] || 0) + 1;
-        });
+    recent?.items?.forEach((item) => {
+      const artists = item.track?.artists || [];
+      artists.forEach((a) => {
+        if (!a.name) return;
+        recentArtistCounts[a.name] = (recentArtistCounts[a.name] || 0) + 1;
       });
-    }
+    });
 
     const rideOrDie = [];
     const newObsessions = [];
     const quietFavorites = [];
 
-    topArtists.forEach((artist, index) => {
+    topArtists.forEach((artist, idx) => {
       const name = artist.name;
-      const plays = recentArtistCounts[name] || 0;
+      const count = recentArtistCounts[name] || 0;
 
-      if (!name) return;
-
-      if (index < 5 && plays >= 2) {
-        rideOrDie.push(name);
-      } else if (index >= 5 && plays >= 2) {
-        newObsessions.push(name);
-      } else if (index < 10 && plays === 0) {
-        quietFavorites.push(name);
-      }
+      if (idx < 5 && count >= 2) rideOrDie.push(name);
+      else if (idx >= 5 && count >= 2) newObsessions.push(name);
+      else if (idx < 10 && count === 0) quietFavorites.push(name);
     });
 
     const artistMomentum = [
-      {
-        label: 'Ride-or-Die Artists',
-        artists: rideOrDie.slice(0, 6),
-      },
-      {
-        label: 'New Obsessions',
-        artists: newObsessions.slice(0, 6),
-      },
-      {
-        label: 'Quiet Favorites',
-        artists: quietFavorites.slice(0, 6),
-      },
-    ].filter((bucket) => bucket.artists.length > 0);
+      { label: 'Ride-or-Die Artists', artists: rideOrDie.slice(0, 6) },
+      { label: 'New Obsessions', artists: newObsessions.slice(0, 6) },
+      { label: 'Quiet Favorites', artists: quietFavorites.slice(0, 6) },
+    ].filter((b) => b.artists.length > 0);
 
-    const tasteProfile = {
+    res.json({
       displayName,
       avatarUrl,
       country,
@@ -386,16 +324,49 @@ app.get('/taste-profile', async (req, res) => {
       listeningHabits,
       listeningPersonality,
       artistMomentum,
-    };
-
-    res.json(tasteProfile);
+    });
   } catch (err) {
     console.error('taste-profile error', err?.body || err);
     res.status(500).json({ error: 'Failed to build taste profile' });
   }
 });
 
-// health check
+/* ------------------------
+   GET /artist-info
+   (ONLY RETURN spotifyURL + image)
+------------------------ */
+app.get('/artist-info', async (req, res) => {
+  const tokenMatch = (req.headers.authorization || '').match(/^Bearer (.+)$/);
+
+  if (!tokenMatch)
+    return res.status(401).json({ error: 'Missing auth header' });
+
+  const accessToken = tokenMatch[1];
+  const artistId = req.query.id;
+
+  if (!artistId) return res.status(400).json({ error: 'Missing artist id' });
+
+  const spotifyApi = createSpotifyClient(accessToken);
+
+  try {
+    const artistRes = await spotifyApi.getArtist(artistId);
+    const artist = artistRes.body;
+
+    res.json({
+      id: artist.id,
+      name: artist.name,
+      imageUrl: artist.images?.[0]?.url || '',
+      spotifyUrl: artist.external_urls?.spotify || '',
+    });
+  } catch (err) {
+    console.error('artist-info error', err?.body || err);
+    res.status(500).json({ error: 'Failed to load artist info' });
+  }
+});
+
+/* ------------------------
+   Health Check
+------------------------ */
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
