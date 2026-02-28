@@ -122,7 +122,12 @@ app.get('/taste-profile', async (req, res) => {
         audioFeatures = (featuresRes.body.audio_features || []).filter(Boolean);
       }
     } catch (err) {
-      console.error('audio features error', err?.body || err);
+      const status = err?.body?.error?.status;
+      // Spotify is currently returning 403 for this endpoint on many apps.
+      // We just ignore that case and fall back to neutral mood instead of spamming the console.
+      if (status !== 403) {
+        console.error('audio features error', err?.body || err);
+      }
     }
 
     const displayName = me.display_name || 'Spotify User';
@@ -157,7 +162,7 @@ app.get('/taste-profile', async (req, res) => {
           : '',
     }));
 
-    // Mood from audio features
+    // Mood from audio features (falls back to neutral-ish if audioFeatures is empty)
     const average = (arr, key) =>
       arr.length
         ? arr.reduce((sum, f) => sum + (f[key] || 0), 0) / arr.length
