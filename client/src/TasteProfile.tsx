@@ -164,6 +164,11 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
       ? trackUris[currentIndex]
       : null;
 
+  const currentTrack =
+    data.topTracks && data.topTracks.length > 0
+      ? data.topTracks[Math.min(currentIndex, data.topTracks.length - 1)]
+      : null;
+
   return (
     <div className='min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50 pb-28'>
       <div className='px-10 py-15 space-y-6'>
@@ -213,7 +218,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
 
         {/* Main grid */}
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-4'>
-          {/* Mood Analysis (placeholder visual) */}
+          {/* Mood Analysis + Listening Habits */}
           <motion.section
             className='col-span-1 rounded-2xl border border-slate-800 bg-slate-900/80 p-4'
             initial={{ opacity: 0, y: 12 }}
@@ -221,29 +226,60 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             transition={{ delay: 0.05 }}
           >
             <h2 className='text-2xl font-semibold mb-2'>Mood Analysis</h2>
-            <p className='text-xl text-slate-400 mb-3'>
+            <p className='text-sm md:text-base text-slate-400 mb-4'>
               Based on your energy, danceability, and valence across recent
               listening.
             </p>
 
-            <div
-              className='relative h-40 flex items-center justify-center'
-              style={{ marginTop: '10rem' }}
-            >
+            {/* Mood bars */}
+            <div className='relative mt-4 mb-8 h-56 flex items-end justify-between'>
               <div className='absolute inset-6 rounded-full bg-gradient-to-tr from-indigo-500/20 via-purple-500/15 to-emerald-400/20 blur-xl' />
-              <div className='relative grid grid-cols-5 gap-1 w-full text-lg text-slate-400'>
+              <div className='relative grid grid-cols-5 gap-3 w-full text-xs md:text-sm text-slate-400'>
                 {data.mood.map((m) => (
                   <div
                     key={m.axis}
-                    className='flex flex-col items-center gap-1'
+                    className='flex flex-col items-center gap-2'
                   >
-                    <div className='h-80 w-2 rounded-full bg-slate-800 overflow-hidden'>
+                    <div className='h-40 w-2 rounded-full bg-slate-800 overflow-hidden'>
                       <div
                         className='w-full bg-gradient-to-t from-emerald-400 to-purple-400'
                         style={{ height: `${m.value * 100}%` }}
                       />
                     </div>
-                    <span className='text-lg text-center'>{m.axis}</span>
+                    <span className='text-center'>{m.axis}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Listening Habits */}
+            <div className='mt-15'>
+              <h3 className='text-2xl font-semibold mb-2'>Listening Habits</h3>
+              <p className='text-sm md:text-base text-slate-400 mb-4'>
+                When you tend to listen the most.
+              </p>
+
+              <div className='space-y-4'>
+                {data.listeningHabits.map((slot) => (
+                  <div key={slot.label} className='flex items-center gap-3'>
+                    <span className='w-32 text-lg text-slate-300 text-right'>
+                      {slot.label}
+                    </span>
+                    <motion.div
+                      className='h-7 rounded-md bg-gradient-to-r from-purple-500 to-emerald-400 shadow-md flex items-center'
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.max(slot.value * 100, 8)}%` }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 80,
+                        damping: 18,
+                      }}
+                      style={{ minWidth: '2rem', maxWidth: '100%' }}
+                    >
+                      <span className='ml-2 text-lg text-slate-50 font-semibold'>
+                        {Math.round(slot.value * 100)}%
+                      </span>
+                    </motion.div>
                   </div>
                 ))}
               </div>
@@ -322,7 +358,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
                     to={`/artist/${encodeURIComponent(artist.name)}`}
                     className='flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-800/70 transition-colors'
                   >
-                    <div className='h-15 w-15 rounded-full border border-slate-700 overflow-hidden flex-shrink-0'>
+                    <div className='h-10 w-10 rounded-full border border-slate-700 overflow-hidden flex-shrink-0'>
                       {artist.imageUrl ? (
                         <img
                           src={artist.imageUrl}
@@ -343,7 +379,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
           </motion.section>
         </div>
 
-        {/* Bottom grid: Top Tracks & Listening Habits */}
+        {/* Bottom grid: Top Tracks & Lyrics */}
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-4'>
           {/* Top Tracks */}
           <motion.section
@@ -354,7 +390,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
           >
             <div className='space-y-1'>
               <h2 className='text-2xl font-semibold mb-2'>Top Tracks</h2>
-              {data.topTracks.map((track, index) => {
+              {data.topTracks.map((track) => {
                 const isActive =
                   isPlaying &&
                   track.uri &&
@@ -411,38 +447,54 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             </div>
           </motion.section>
 
-          {/* Listening Habits */}
+          {/* Lyrics / Now Playing */}
           <motion.section
             className='col-span-1 rounded-2xl border border-slate-800 bg-slate-900/80 p-4'
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
           >
-            <h2 className='text-2xl font-semibold mb-2'>Listening Habits</h2>
-            <p className='text-xl text-slate-400 mb-3'>
-              When you tend to listen the most.
-            </p>
+            <h2 className='text-2xl font-semibold mb-2'>Lyrics</h2>
 
-            <div className='space-y-4'>
-              {data.listeningHabits.map((slot) => (
-                <div key={slot.label} className='flex items-center gap-3'>
-                  <span className='w-32 text-lg text-slate-400 text-right'>
-                    {slot.label}
-                  </span>
-                  <motion.div
-                    className='h-7 rounded-md bg-gradient-to-r from-purple-500 to-emerald-400 shadow-md flex items-center'
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.max(slot.value * 100, 8)}%` }}
-                    transition={{ type: 'spring', stiffness: 80, damping: 18 }}
-                    style={{ minWidth: '2rem', maxWidth: '100%' }}
-                  >
-                    <span className='ml-2 text-slate-50 font-semibold'>
-                      {Math.round(slot.value * 100)}%
-                    </span>
-                  </motion.div>
+            {currentTrack ? (
+              <>
+                <p className='text-sm text-slate-400 mb-4'>
+                  Showing info for your current track.
+                  <br />
+                  Lyrics aren&apos;t provided by the Spotify API, but this card
+                  is ready for a lyrics integration.
+                </p>
+
+                <div className='rounded-xl border border-slate-700 bg-slate-900/80 p-4 flex flex-col items-center gap-3'>
+                  <div className='h-24 w-24 rounded-lg overflow-hidden mb-1'>
+                    <img
+                      src={currentTrack.albumArt}
+                      alt={currentTrack.title}
+                      className='h-full w-full object-cover'
+                    />
+                  </div>
+                  <div className='text-center'>
+                    <p className='text-lg font-semibold truncate max-w-[16rem]'>
+                      {currentTrack.title}
+                    </p>
+                    <p className='text-sm text-slate-400 truncate max-w-[16rem]'>
+                      {currentTrack.artist}
+                    </p>
+                  </div>
+                  <div className='mt-3 w-full rounded-lg border border-slate-800 bg-slate-950/80 px-3 py-2'>
+                    <p className='text-xs text-slate-500'>🎵 Lyrics preview</p>
+                    <p className='mt-1 text-xs text-slate-400'>
+                      Hook this section up to a lyrics provider (via your own
+                      backend) to stream lines from the song while it plays.
+                    </p>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </>
+            ) : (
+              <p className='text-sm text-slate-400'>
+                Start playing one of your top tracks to see track details here.
+              </p>
+            )}
           </motion.section>
         </div>
       </div>
