@@ -20,6 +20,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from './components/ui/dialog';
+import MoodChart from './components/tasteProfile/MoodChart';
+import ListeningHabitsChart from './components/tasteProfile/ListeningHabitsChart';
 
 type MoodAxis = 'Energetic' | 'Happy' | 'Chill' | 'Danceable' | 'Melancholy';
 
@@ -238,26 +240,8 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
               Based on your energy, danceability, and valence across recent
               listening.
             </p>
-
-            {/* Mood bars */}
-            <div className='relative mt-4 mb-8 h-56 flex items-end justify-between'>
-              <div className='absolute inset-6 rounded-full bg-gradient-to-tr from-indigo-500/20 via-purple-500/15 to-emerald-400/20 blur-xl' />
-              <div className='relative grid grid-cols-5 gap-3 w-full text-xs md:text-sm text-slate-400'>
-                {data.mood.map((m) => (
-                  <div
-                    key={m.axis}
-                    className='flex flex-col items-center gap-2'
-                  >
-                    <div className='h-40 w-2 rounded-full bg-slate-800 overflow-hidden'>
-                      <div
-                        className='w-full bg-gradient-to-t from-emerald-400 to-purple-400'
-                        style={{ height: `${m.value * 100}%` }}
-                      />
-                    </div>
-                    <span className='text-center'>{m.axis}</span>
-                  </div>
-                ))}
-              </div>
+            <div className='mb-16'>
+              <MoodChart mood={data.mood} />
             </div>
 
             {/* Listening Habits */}
@@ -266,31 +250,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
               <p className='text-sm md:text-base text-slate-400 mb-4'>
                 When you tend to listen the most.
               </p>
-
-              <div className='space-y-4'>
-                {data.listeningHabits.map((slot) => (
-                  <div key={slot.label} className='flex items-center gap-3'>
-                    <span className='w-32 text-lg text-slate-300 text-right'>
-                      {slot.label}
-                    </span>
-                    <motion.div
-                      className='h-7 rounded-md bg-gradient-to-r from-purple-500 to-emerald-400 shadow-md flex items-center'
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.max(slot.value * 100, 8)}%` }}
-                      transition={{
-                        type: 'spring',
-                        stiffness: 80,
-                        damping: 18,
-                      }}
-                      style={{ minWidth: '2rem', maxWidth: '100%' }}
-                    >
-                      <span className='ml-2 text-lg text-slate-50 font-semibold'>
-                        {Math.round(slot.value * 100)}%
-                      </span>
-                    </motion.div>
-                  </div>
-                ))}
-              </div>
+              <ListeningHabitsChart habits={data.listeningHabits} />
             </div>
           </motion.section>
 
