@@ -331,7 +331,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
               {data.topTracks.map((track) => (
                 <div
                   key={track.rank}
-                  className='flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-800/70 transition-colors'
+                  className='flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-800/70 transition-colors cursor-pointer'
                 >
                   <span className='w-5 text-lg text-slate-400'>
                     {track.rank}.
