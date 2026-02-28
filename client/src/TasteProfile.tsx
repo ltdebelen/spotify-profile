@@ -31,7 +31,7 @@ type TopTrack = {
   title: string;
   artist: string;
   albumArt: string;
-  uri?: string; // <-- needed for playback
+  uri?: string;
 };
 
 type ListeningHabit = {
@@ -94,7 +94,7 @@ function getListeningPersonalityIcon(archetype: string) {
 const TasteProfile = ({ code }: TasteProfileProps) => {
   const accessToken = useAuth(code);
 
-  const [activeTrackUri, setActiveTrackUri] = useState<string | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const { data, isLoading, isError } = useQuery<TasteProfileData>({
@@ -116,10 +116,10 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
     },
   });
 
-  // Optionally auto-select first track when data loads (only if it has a URI)
+  // Reset to first track when new data loads
   useEffect(() => {
-    if (data?.topTracks?.[0]?.uri) {
-      setActiveTrackUri(data.topTracks[0].uri);
+    if (data?.topTracks?.length) {
+      setCurrentIndex(0);
     }
   }, [data]);
 
@@ -149,12 +149,14 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
     );
   }
 
-  // dev log
-  // console.log('data', data);
-
   const PersonalityIcon = getListeningPersonalityIcon(
     data.listeningPersonality.archetype,
   );
+
+  // Build URI list for the player (only tracks that actually have a uri)
+  const trackUris = (data.topTracks || [])
+    .map((t) => t.uri)
+    .filter((uri): uri is string => Boolean(uri));
 
   return (
     <div className='min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50 pb-28'>
@@ -340,12 +342,13 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             transition={{ delay: 0.2 }}
           >
             <div className='space-y-1'>
-              {data.topTracks.map((track) => (
+              <h2 className='text-2xl font-semibold mb-2'>Top Tracks</h2>
+              {data.topTracks.map((track, index) => (
                 <div
                   key={track.rank}
                   onClick={() => {
                     if (!track.uri) return;
-                    setActiveTrackUri(track.uri);
+                    setCurrentIndex(index);
                     setIsPlaying(true);
                   }}
                   className='flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-800/70 transition-colors cursor-pointer'
@@ -410,12 +413,16 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
       </div>
 
       {/* Spotify Web Player */}
-      {accessToken && activeTrackUri && (
+      {accessToken && trackUris.length > 0 && (
         <div className='fixed bottom-0 inset-x-0 bg-slate-950/95 border-t border-slate-800 px-2 py-2'>
           <SpotifyPlayer
             token={accessToken}
-            uris={[activeTrackUri]}
+            uris={trackUris}
+            offset={currentIndex}
             play={isPlaying}
+            name='Taste Profile Player'
+            hideAttribution
+            initialVolume={0.5}
             callback={(state) => {
               if (!state.isPlaying) {
                 setIsPlaying(false);
