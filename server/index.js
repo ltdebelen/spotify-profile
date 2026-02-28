@@ -160,6 +160,7 @@ app.get('/taste-profile', async (req, res) => {
         track.album && track.album.images && track.album.images[0]
           ? track.album.images[0].url
           : '',
+      uri: track.uri,
     }));
 
     // Mood from audio features (falls back to neutral-ish if audioFeatures is empty)

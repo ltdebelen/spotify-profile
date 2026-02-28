@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import useAuth from './useAuth';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import SpotifyPlayer from 'react-spotify-web-playback';
 import {
   Equal,
   MoonStar,
@@ -29,6 +31,7 @@ type TopTrack = {
   title: string;
   artist: string;
   albumArt: string;
+  uri?: string; // <-- needed for playback
 };
 
 type ListeningHabit = {
@@ -91,6 +94,9 @@ function getListeningPersonalityIcon(archetype: string) {
 const TasteProfile = ({ code }: TasteProfileProps) => {
   const accessToken = useAuth(code);
 
+  const [activeTrackUri, setActiveTrackUri] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
   const { data, isLoading, isError } = useQuery<TasteProfileData>({
     queryKey: ['taste-profile', accessToken],
     enabled: !!accessToken,
@@ -109,6 +115,13 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
       return res.data;
     },
   });
+
+  // Optionally auto-select first track when data loads (only if it has a URI)
+  useEffect(() => {
+    if (data?.topTracks?.[0]?.uri) {
+      setActiveTrackUri(data.topTracks[0].uri);
+    }
+  }, [data]);
 
   if (!accessToken) {
     return (
@@ -136,16 +149,15 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
     );
   }
 
-  {
-    console.log('data', data);
-  }
+  // dev log
+  // console.log('data', data);
 
   const PersonalityIcon = getListeningPersonalityIcon(
     data.listeningPersonality.archetype,
   );
 
   return (
-    <div className='min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50'>
+    <div className='min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50 pb-28'>
       <div className='px-10 py-15 space-y-6'>
         {/* Hero */}
         <motion.section
@@ -331,6 +343,11 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
               {data.topTracks.map((track) => (
                 <div
                   key={track.rank}
+                  onClick={() => {
+                    if (!track.uri) return;
+                    setActiveTrackUri(track.uri);
+                    setIsPlaying(true);
+                  }}
                   className='flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-800/70 transition-colors cursor-pointer'
                 >
                   <span className='w-5 text-lg text-slate-400'>
@@ -391,6 +408,31 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
           </motion.section>
         </div>
       </div>
+
+      {/* Spotify Web Player */}
+      {accessToken && activeTrackUri && (
+        <div className='fixed bottom-0 inset-x-0 bg-slate-950/95 border-t border-slate-800 px-2 py-2'>
+          <SpotifyPlayer
+            token={accessToken}
+            uris={[activeTrackUri]}
+            play={isPlaying}
+            callback={(state) => {
+              if (!state.isPlaying) {
+                setIsPlaying(false);
+              }
+            }}
+            styles={{
+              bgColor: '#020617',
+              color: '#e2e8f0',
+              trackNameColor: '#f9fafb',
+              trackArtistColor: '#94a3b8',
+              sliderColor: '#22c55e',
+              sliderTrackColor: '#1e293b',
+              sliderHandleColor: '#e2e8f0',
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };
