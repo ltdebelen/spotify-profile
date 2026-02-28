@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import useAuth from './useAuth';
 import { useQuery } from '@tanstack/react-query';
@@ -14,6 +13,13 @@ import {
   Waves,
   CloudMoon,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from './components/ui/dialog';
 
 type MoodAxis = 'Energetic' | 'Happy' | 'Chill' | 'Danceable' | 'Melancholy';
 
@@ -97,6 +103,8 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [selectedArtist, setSelectedArtist] = useState<ArtistChip | null>(null);
+  const [isArtistDialogOpen, setIsArtistDialogOpen] = useState(false);
 
   const { data, isLoading, isError } = useQuery<TasteProfileData>({
     queryKey: ['taste-profile', accessToken],
@@ -347,18 +355,22 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             transition={{ delay: 0.15 }}
           >
             <h2 className='text-2xl font-semibold mb-2'>Favorite Artists</h2>
-            <p className='text-xl text-slate-400 mb-3'>
+            <p className='text-base md:text-lg text-slate-400 mb-3'>
               Your most played + followed artists blend.
             </p>
 
-            <ul className='space-y-1 text-xl text-slate-300'>
+            <ul className='space-y-1 text-slate-300'>
               {data.favoriteArtists.map((artist) => (
                 <li key={artist.name}>
-                  <Link
-                    to={`/artist/${encodeURIComponent(artist.name)}`}
-                    className='flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-800/70 transition-colors'
+                  <button
+                    type='button'
+                    onClick={() => {
+                      setSelectedArtist(artist);
+                      setIsArtistDialogOpen(true);
+                    }}
+                    className='w-full flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-800/70 transition-colors text-left'
                   >
-                    <div className='h-10 w-10 rounded-full border border-slate-700 overflow-hidden flex-shrink-0'>
+                    <div className='h-12 w-12 rounded-full border border-slate-700 overflow-hidden flex-shrink-0'>
                       {artist.imageUrl ? (
                         <img
                           src={artist.imageUrl}
@@ -366,13 +378,13 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
                           className='h-full w-full object-cover'
                         />
                       ) : (
-                        <div className='h-full w-full flex items-center justify-center text-sm text-slate-500 bg-slate-800'>
+                        <div className='h-full w-full flex items-center justify-center text-xs text-slate-500 bg-slate-800'>
                           ?
                         </div>
                       )}
                     </div>
-                    <span className='truncate'>{artist.name}</span>
-                  </Link>
+                    <span className='truncate text-lg'>{artist.name}</span>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -498,6 +510,52 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
           </motion.section>
         </div>
       </div>
+
+      {/* Artist Detail Dialog */}
+      <Dialog
+        open={isArtistDialogOpen && !!selectedArtist}
+        onOpenChange={(open) => {
+          setIsArtistDialogOpen(open);
+          if (!open) {
+            setSelectedArtist(null);
+          }
+        }}
+      >
+        <DialogContent className='max-w-md bg-slate-950 border-slate-800 text-slate-50'>
+          <DialogHeader className='items-center'>
+            <DialogTitle className='text-2xl'>
+              {selectedArtist?.name}
+            </DialogTitle>
+            <DialogDescription className='text-center text-slate-400'>
+              One of your top artists based on your recent listening.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className='mt-4 flex flex-col items-center gap-4'>
+            <div className='h-32 w-32 rounded-full overflow-hidden border border-slate-700'>
+              {selectedArtist?.imageUrl ? (
+                <img
+                  src={selectedArtist.imageUrl}
+                  alt={selectedArtist.name}
+                  className='h-full w-full object-cover'
+                />
+              ) : (
+                <div className='h-full w-full flex items-center justify-center text-sm text-slate-500 bg-slate-800'>
+                  No image
+                </div>
+              )}
+            </div>
+
+            {/* Placeholder description for now. You can later swap this
+                with real data from a /artist/:id endpoint. */}
+            <p className='text-sm md:text-base text-slate-300 text-center leading-relaxed'>
+              This artist shows up often in your recent listening. In a future
+              iteration, this panel can pull in Spotify bio, top tracks, and
+              related artists for a deeper dive.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Spotify Web Player */}
       {accessToken && trackUris.length > 0 && (
