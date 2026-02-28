@@ -119,6 +119,9 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedArtist, setSelectedArtist] = useState<ArtistChip | null>(null);
   const [isArtistDialogOpen, setIsArtistDialogOpen] = useState(false);
+  const [selectedTrackIndex, setSelectedTrackIndex] = useState<number | null>(
+    null,
+  );
 
   const { data, isLoading, isError } = useQuery<TasteProfileData>({
     queryKey: ['taste-profile', accessToken],
@@ -139,7 +142,6 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
     },
   });
 
-  // Artist info query
   const {
     data: artistInfo,
     isLoading: isArtistLoading,
@@ -156,19 +158,16 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
     },
   });
 
-  // Reset to first track when new data loads
   useEffect(() => {
     if (data?.topTracks?.length) {
       setCurrentIndex(0);
+      setSelectedTrackIndex(null);
     }
   }, [data]);
 
-  const topTracksForLyrics = data?.topTracks ?? [];
-  const currentTrack =
-    topTracksForLyrics.length > 0
-      ? topTracksForLyrics[
-          Math.min(currentIndex, topTracksForLyrics.length - 1)
-        ]
+  const selectedTrack =
+    selectedTrackIndex !== null && data?.topTracks
+      ? data.topTracks[selectedTrackIndex]
       : null;
 
   const {
@@ -176,13 +175,13 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
     isLoading: isLyricsLoading,
     isError: isLyricsError,
   } = useQuery<LyricsResponse>({
-    queryKey: ['lyrics', currentTrack?.title, currentTrack?.artist],
-    enabled: !!currentTrack?.title && !!currentTrack?.artist,
+    queryKey: ['lyrics', selectedTrack?.title, selectedTrack?.artist],
+    enabled: !!selectedTrack?.title && !!selectedTrack?.artist,
     queryFn: async () => {
       const res = await axios.get<LyricsResponse>(`${SERVER_URL}/lyrics`, {
         params: {
-          title: currentTrack!.title,
-          artist: currentTrack!.artist,
+          title: selectedTrack!.title,
+          artist: selectedTrack!.artist,
         },
       });
       return res.data;
@@ -219,7 +218,6 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
     data.listeningPersonality.archetype,
   );
 
-  // Build URI list for the player
   const trackUris = (data.topTracks || [])
     .map((t) => t.uri)
     .filter((uri): uri is string => Boolean(uri));
@@ -425,6 +423,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
                       );
                       if (uriIndex === -1) return;
                       setCurrentIndex(uriIndex);
+                      setSelectedTrackIndex(uriIndex);
                       setIsPlaying(true);
                     }}
                     className={`flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors cursor-pointer ${
@@ -474,22 +473,22 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
           >
             <h2 className='text-2xl font-semibold mb-2'>Lyrics</h2>
 
-            {currentTrack ? (
+            {selectedTrack ? (
               <div className='space-y-4'>
                 <div className='rounded-xl border border-slate-700 bg-slate-900/80 p-4 flex flex-col items-center gap-3'>
                   <div className='h-24 w-24 rounded-lg overflow-hidden mb-1'>
                     <img
-                      src={currentTrack.albumArt}
-                      alt={currentTrack.title}
+                      src={selectedTrack.albumArt}
+                      alt={selectedTrack.title}
                       className='h-full w-full object-cover'
                     />
                   </div>
                   <div className='text-center'>
                     <p className='text-lg font-semibold truncate max-w-[16rem]'>
-                      {currentTrack.title}
+                      {selectedTrack.title}
                     </p>
                     <p className='text-sm text-slate-400 truncate max-w-[16rem]'>
-                      {currentTrack.artist}
+                      {selectedTrack.artist}
                     </p>
                   </div>
                 </div>
@@ -520,7 +519,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
               </div>
             ) : (
               <p className='text-sm text-slate-400'>
-                Start playing one of your top tracks to see track details here.
+                Tap on one of your top tracks to load lyrics here.
               </p>
             )}
           </motion.section>
