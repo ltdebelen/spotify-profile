@@ -158,6 +158,11 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
     .map((t) => t.uri)
     .filter((uri): uri is string => Boolean(uri));
 
+  const currentTrackUri =
+    trackUris.length > 0 && currentIndex >= 0 && currentIndex < trackUris.length
+      ? trackUris[currentIndex]
+      : null;
+
   return (
     <div className='min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50 pb-28'>
       <div className='px-10 py-15 space-y-6'>
@@ -343,36 +348,60 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
           >
             <div className='space-y-1'>
               <h2 className='text-2xl font-semibold mb-2'>Top Tracks</h2>
-              {data.topTracks.map((track, index) => (
-                <div
-                  key={track.rank}
-                  onClick={() => {
-                    if (!track.uri) return;
-                    setCurrentIndex(index);
-                    setIsPlaying(true);
-                  }}
-                  className='flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-800/70 transition-colors cursor-pointer'
-                >
-                  <span className='w-5 text-lg text-slate-400'>
-                    {track.rank}.
-                  </span>
-                  <div className='h-14 w-14 rounded-md overflow-hidden flex-shrink-0'>
-                    <img
-                      src={track.albumArt}
-                      alt={track.title}
-                      className='h-full w-full object-cover'
-                    />
-                  </div>
-                  <div className='flex flex-col min-w-0'>
-                    <span className='text-xl font-medium truncate'>
-                      {track.title}
+              {data.topTracks.map((track, index) => {
+                const isActive =
+                  isPlaying &&
+                  track.uri &&
+                  currentTrackUri &&
+                  track.uri === currentTrackUri;
+
+                return (
+                  <div
+                    key={track.rank}
+                    onClick={() => {
+                      if (!track.uri) return;
+                      const uriIndex = trackUris.findIndex(
+                        (uri) => uri === track.uri,
+                      );
+                      if (uriIndex === -1) return;
+                      setCurrentIndex(uriIndex);
+                      setIsPlaying(true);
+                    }}
+                    className={`flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors cursor-pointer ${
+                      isActive ? 'bg-slate-800/90' : 'hover:bg-slate-800/70'
+                    }`}
+                  >
+                    <span
+                      className={`w-5 text-lg ${
+                        isActive
+                          ? 'text-emerald-400 font-semibold'
+                          : 'text-slate-400'
+                      }`}
+                    >
+                      {track.rank}.
                     </span>
-                    <span className='text-lg text-slate-400 truncate'>
-                      {track.artist}
-                    </span>
+                    <div className='h-14 w-14 rounded-md overflow-hidden flex-shrink-0'>
+                      <img
+                        src={track.albumArt}
+                        alt={track.title}
+                        className='h-full w-full object-cover'
+                      />
+                    </div>
+                    <div className='flex flex-col min-w-0'>
+                      <span
+                        className={`text-xl font-medium truncate ${
+                          isActive ? 'text-slate-50' : ''
+                        }`}
+                      >
+                        {track.title}
+                      </span>
+                      <span className='text-lg text-slate-400 truncate'>
+                        {track.artist}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </motion.section>
 
@@ -426,6 +455,16 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
             callback={(state) => {
               if (!state.isPlaying) {
                 setIsPlaying(false);
+              } else {
+                setIsPlaying(true);
+              }
+
+              const uri = state?.track?.uri;
+              if (uri) {
+                const idx = trackUris.findIndex((tUri) => tUri === uri);
+                if (idx !== -1) {
+                  setCurrentIndex(idx);
+                }
               }
             }}
             styles={{
