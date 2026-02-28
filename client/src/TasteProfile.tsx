@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import useAuth from './useAuth';
 import { useQuery } from '@tanstack/react-query';
@@ -314,24 +315,29 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
               Your most played + followed artists blend.
             </p>
 
-            <div className='flex -space-x-3 mb-3'>
-              {data.favoriteArtists.slice(0, 4).map((artist) => (
-                <div
-                  key={artist.name}
-                  className='h-14 w-14 rounded-full border border-slate-900 overflow-hidden'
-                >
-                  <img
-                    src={artist.imageUrl}
-                    alt={artist.name}
-                    className='h-full w-full object-cover'
-                  />
-                </div>
-              ))}
-            </div>
-
             <ul className='space-y-1 text-xl text-slate-300'>
               {data.favoriteArtists.map((artist) => (
-                <li key={artist.name}>• {artist.name}</li>
+                <li key={artist.name}>
+                  <Link
+                    to={`/artist/${encodeURIComponent(artist.name)}`}
+                    className='flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-800/70 transition-colors'
+                  >
+                    <div className='h-15 w-15 rounded-full border border-slate-700 overflow-hidden flex-shrink-0'>
+                      {artist.imageUrl ? (
+                        <img
+                          src={artist.imageUrl}
+                          alt={artist.name}
+                          className='h-full w-full object-cover'
+                        />
+                      ) : (
+                        <div className='h-full w-full flex items-center justify-center text-sm text-slate-500 bg-slate-800'>
+                          ?
+                        </div>
+                      )}
+                    </div>
+                    <span className='truncate'>{artist.name}</span>
+                  </Link>
+                </li>
               ))}
             </ul>
           </motion.section>
