@@ -232,12 +232,13 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
       <div className='px-10 py-15 space-y-6'>
         {/* Hero */}
         <motion.section
-          className='flex flex-col md:flex-row items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900/80 px-5 py-4 backdrop-blur'
+          className='flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 backdrop-blur md:flex-row md:items-center md:justify-between md:px-5 md:py-4'
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className='flex items-center gap-4'>
-            <div className='h-24 w-24 rounded-full bg-slate-800 overflow-hidden flex items-center justify-center text-xl text-slate-400'>
+          {/* Avatar + text */}
+          <div className='flex flex-col items-center gap-3 text-center md:flex-row md:items-center md:gap-4 md:text-left'>
+            <div className='flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-slate-800 text-lg text-slate-400 md:h-24 md:w-24'>
               {data.avatarUrl ? (
                 <img
                   src={data.avatarUrl}
@@ -248,26 +249,29 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
                 <span>No Photo</span>
               )}
             </div>
+
             <div className='space-y-1'>
-              <p className='text-xl uppercase tracking-[0.2em] text-slate-400'>
+              <p className='text-[0.65rem] uppercase tracking-[0.2em] text-slate-400'>
                 Taste Profile
               </p>
-              <h1 className='text-4xl md:text-5xl font-semibold'>
-                Hi, {data.displayName.split(' ')[0]} — here’s your music vibe.
+              <h1 className='text-2xl font-semibold leading-snug sm:text-3xl md:text-4xl'>
+                Hi, {data.displayName.split(' ')[0]} — here&apos;s your music
+                vibe.
               </h1>
-              <p className='text-xl text-slate-400'>
+              <p className='text-sm text-slate-400 sm:text-base'>
                 {data.country} •{' '}
                 {data.product === 'premium' ? 'Premium' : 'Free'} listener
               </p>
             </div>
           </div>
 
-          <div className='flex items-center gap-3 text-xl'>
-            <div className='rounded-full bg-emerald-500/10 text-emerald-300 px-3 py-1 border border-emerald-500/40'>
+          {/* Pills */}
+          <div className='mt-2 flex w-full flex-col items-center gap-2 text-xs sm:text-sm md:mt-0 md:w-auto md:flex-row md:justify-end md:text-base'>
+            <div className='min-w-[9rem] rounded-full border border-emerald-500/40 bg-emerald-500/10 px-4 py-1.5 text-center text-emerald-300'>
               <span className='font-semibold'>{data.playlistsCount}</span>{' '}
               playlists
             </div>
-            <div className='rounded-full bg-amber-500/10 text-amber-300 px-3 py-1 border border-amber-500/40'>
+            <div className='min-w-[9rem] rounded-full border border-amber-500/40 bg-amber-500/10 px-4 py-1.5 text-center text-amber-300'>
               <span className='font-semibold'>{data.followedArtistsCount}</span>{' '}
               artists followed
             </div>
@@ -276,6 +280,7 @@ const TasteProfile = ({ code }: TasteProfileProps) => {
 
         {/* Main grid */}
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-4'>
+          {/* Mood Analysis */}
           <motion.section
             className='col-span-1 rounded-2xl border border-slate-800 bg-slate-900/80 p-4'
             initial={{ opacity: 0, y: 12 }}
