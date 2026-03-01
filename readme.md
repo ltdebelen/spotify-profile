@@ -1,5 +1,7 @@
 # Spotify Profile App
 
+**Live Demo:** [Spotify - Taste Profile](https://spotify-profile-3zsu.onrender.com/)
+
 ## Project Overview
 
 This project is a Spotify-inspired music profile app, built to combine my interests in music and front-end development. While it’s not a direct clone, it offers a familiar experience for users to explore their listening habits, favorite artists, and top tracks.
@@ -34,3 +36,17 @@ There’s still plenty of room for growth. I’d like to:
 - Expand analytics and visualizations for user listening data.
 
 Overall, I’m proud to get to work on something I’m really interested in and looking forward to improving this project even more.
+
+## App Screenshots
+
+1. **Connect Spotify Account**
+   ![Connect Spotify Account](client/src/assets/connect-spotify-acct.png)
+
+2. **Spotify Login Page**
+   ![Spotify Login Page](client/src/assets/spotify-login-page.png)
+
+3. **Dashboard (Part 1)**
+   ![Dashboard Part 1](client/src/assets/dashboard-p1.png)
+
+4. **Dashboard (Part 2)**
+   ![Dashboard Part 2](client/src/assets/dashboard-p2.png)
